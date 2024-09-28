@@ -5,7 +5,7 @@
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-pip install numpy pandas scipy matplotlib seaborn jupyter streamlit babel
+pip install numpy pandas scipy matplotlib seaborn jupyter streamlit 
 ```
 ## Run Streamlit
 ```bash
