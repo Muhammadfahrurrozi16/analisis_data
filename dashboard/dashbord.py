@@ -5,94 +5,124 @@ import streamlit as st
 # from babel.numbers import format_currency
 sns.set(style='dark')
 
-def create_top_seller_monthly(df):
-    df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
-    df['order_month'] = df['order_purchase_timestamp'].dt.to_period('M')
-    seller_sales = df.groupby(['seller_id', 'order_month']).agg(total_sales=('price', 'sum')).reset_index()
-    top_seller_monthly = seller_sales.sort_values('total_sales', ascending=False).groupby('order_month').first().reset_index()
+def create_top_5_cities_customers_2018(all_df):
+    all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
+    all_df_2018 = all_df[all_df['order_purchase_timestamp'].dt.year == 2018]
+    unique_customers_2018 = all_df_2018[['customer_unique_id', 'customer_city']].drop_duplicates()
+    customer_per_city_2018 = unique_customers_2018.groupby('customer_city').size().reset_index(name='total_customers')
+    customer_per_city_2018.sort_values(by='total_customers', ascending=False, inplace=True)
+    top_5_cities_customers_2018 = customer_per_city_2018.head(5)
 
-    return top_seller_monthly
-def create_seller_per_city(df):
-    seller_location = df[['seller_id', 'seller_city']].drop_duplicates()
-    seller_per_city = seller_location.groupby('seller_city').agg(total_sellers=('seller_id', 'count')).reset_index()
-    seller_per_city = seller_per_city.sort_values(by='total_sellers', ascending=False)
+    return top_5_cities_customers_2018
+def create_top_5_customer_vs_other_cities(all_df):
+    all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
+    all_df_2018 = all_df[all_df['order_purchase_timestamp'].dt.year == 2018]
+    unique_customers_2018 = all_df_2018[['customer_unique_id', 'customer_city']].drop_duplicates()
+    customer_per_city_2018 = unique_customers_2018.groupby('customer_city').size().reset_index(name='total_customers')
+    customer_per_city_2018.sort_values(by='total_customers', ascending=False, inplace=True)
+    top_5_cities_customers_2018 = customer_per_city_2018.head(5)
+    customer_per_city_2018['category'] = customer_per_city_2018['customer_city'].apply(
+    lambda x: x if x in top_5_cities_customers_2018['customer_city'].values else 'Other')
+    customer_category_2018 = customer_per_city_2018.groupby('category')['total_customers'].sum().reset_index()
 
-    return seller_per_city
+    return customer_category_2018
+def create_top_5_cities_seller_2018(all_df):
+    all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
+    all_df_2018 = all_df[all_df['order_purchase_timestamp'].dt.year == 2018]
+    unique_sellers_2018 = all_df_2018[['seller_id', 'seller_city']].drop_duplicates()
+    seller_per_city_2018 = unique_sellers_2018.groupby('seller_city').size().reset_index(name='total_sellers')
+    seller_per_city_2018.sort_values(by='total_sellers', ascending=False, inplace=True)
+    top_5_cities_sellers_2018 = seller_per_city_2018.head(5)
+
+    return top_5_cities_sellers_2018
+
+def create_top_5_seller_vs_other_cities(all_df):
+    all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
+    all_df_2018 = all_df[all_df['order_purchase_timestamp'].dt.year == 2018]
+    unique_sellers_2018 = all_df_2018[['seller_id', 'seller_city']].drop_duplicates()
+    seller_per_city_2018 = unique_sellers_2018.groupby('seller_city').size().reset_index(name='total_sellers')
+    seller_per_city_2018.sort_values(by='total_sellers', ascending=False, inplace=True)
+    top_5_cities_sellers_2018 = seller_per_city_2018.head(5)
+    seller_per_city_2018['category'] = seller_per_city_2018['seller_city'].apply(
+    lambda x: x if x in top_5_cities_sellers_2018['seller_city'].values else 'Other')
+    seller_category_2018 = seller_per_city_2018.groupby('category')['total_sellers'].sum().reset_index()
+
+    return seller_category_2018
+
+
 main_df = pd.read_csv("dashboard/all_data.csv")
 
-# datetime_columns = ["order_date", "delivery_date"]
-# all_df.sort_values(by="order_date", inplace=True)
-# all_df.reset_index(inplace=True)
+top_5_cities_customers_2018 =  create_top_5_cities_customers_2018(main_df)
+customer_category_2018 = create_top_5_customer_vs_other_cities(main_df)
+top_5_cities_sellers_2018 = create_top_5_cities_seller_2018(main_df)
+seller_category_2018 = create_top_5_seller_vs_other_cities(main_df)
 
-# for column in datetime_columns:
-#     all_df[column] = pd.to_datetime(all_df[column])
-
-# # Filter data
-# min_date = all_df["order_date"].min()
-# max_date = all_df["order_date"].max()
 
 with st.sidebar:
     # Menambahkan logo perusahaan
     st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png")
-    
-    # Mengambil start_date & end_date dari date_input
-#     start_date, end_date = st.date_input(
-#         label='Rentang Waktu',min_value=min_date,
-#         max_value=max_date,
-#         value=[min_date, max_date]
-#     )
 
-# main_df = all_df[(all_df["order_date"] >= str(start_date)) & 
-#                 (all_df["order_date"] <= str(end_date))]
+st.subheader("Best 5 city customer")
 
-top_seller_monthly = create_top_seller_monthly(main_df)
-seller_per_city = create_seller_per_city(main_df)
-
-st.subheader("Top seller Monthly")
-
-
-fig, ax = plt.subplots(figsize=(12, 6))
-
-sns.barplot(data=top_seller_monthly, x='order_month', y='total_sales', hue='seller_id', ax=ax)
-
-ax.set_title('Top Seller per Month by Sales')
-ax.set_xlabel('Month')
-ax.set_ylabel('Total Sales')
-
-plt.xticks(rotation=45)
-
-ax.legend(title='Seller ID', loc='upper right')
-
-plt.tight_layout()
-
-st.pyplot(fig)
-
-st.subheader("Best City Seller")
-
-fig, ax = plt.subplots(figsize=(12, 6))
-
+fig, ax = plt.subplots(figsize=(20, 10))
+colors = ["#90CAF9"] + ["#D3D3D3"] * (len(top_5_cities_customers_2018) - 1)
 sns.barplot(
-    data=seller_per_city.head(10), 
-    x='seller_city', 
-    y='total_sellers', 
-    hue='seller_city', 
-    dodge=False, 
-    legend=False, 
+    x='customer_city',
+    y='total_customers',
+    data=top_5_cities_customers_2018,
+    palette=colors,
     ax=ax
 )
-ax.set_title('Top 10 Cities with the Most Sellers')
-ax.set_xlabel('City')
-ax.set_ylabel('Number of Sellers')
-
+ax.set_title("Top 5 Cities with the Most Customers in 2018", loc="center", fontsize=30)
+ax.set_ylabel('Number of Customers', fontsize=20)
+ax.set_xlabel('City', fontsize=20)
+ax.tick_params(axis='y', labelsize=20)
+ax.tick_params(axis='x', labelsize=15)
 plt.xticks(rotation=45)
-
-plt.tight_layout()
-
 st.pyplot(fig)
 
+st.subheader("Best 5 vs other city customer")
+
+labels_customer = customer_category_2018['category']
+sizes_customer = customer_category_2018['total_customers']
+colors_customer = ['#FF9999', '#66B3FF', '#99FF99', '#FFCC99', '#FF6666', '#FFD700']
+fig1, ax1 = plt.subplots(figsize=(8, 8))
+ax1.pie(sizes_customer, labels=labels_customer, autopct='%1.1f%%', startangle=90, colors=colors_customer)
+ax1.axis('equal')
+plt.title('Customer Distribution: Top 5 Cities vs Other Cities (2018)', fontsize=16)
+st.pyplot(fig1)
+
+st.subheader("Best 5 city seller")
+    
+fig, ax = plt.subplots(figsize=(20, 10))
+colors = ["#90CAF9"] + ["#D3D3D3"] * (len(top_5_cities_sellers_2018) - 1)
+sns.barplot(
+    x='seller_city',
+    y='total_sellers',
+    data=top_5_cities_sellers_2018,
+    palette=colors,
+    ax=ax
+)
+ax.set_title("Top 5 Cities with the Most Sellers in 2018", loc="center", fontsize=30)
+ax.set_ylabel('Number of Sellers', fontsize=20)
+ax.set_xlabel('City', fontsize=20)
+ax.tick_params(axis='y', labelsize=20)
+ax.tick_params(axis='x', labelsize=15)
+plt.xticks(rotation=45)
+st.pyplot(fig)
+
+st.subheader("Best 5 vs other city seller")
+
+labels_seller = seller_category_2018['category']
+sizes_seller = seller_category_2018['total_sellers']
+colors_seller = ['#FF9999', '#66B3FF', '#99FF99', '#FFCC99', '#FF6666', '#8A2BE2']
+
+fig2, ax2 = plt.subplots(figsize=(8, 8))
+ax2.pie(sizes_seller, labels=labels_seller, autopct='%1.1f%%', startangle=90, colors=colors_seller)
+ax2.axis('equal') 
+
+plt.title('Seller Distribution: Top 5 Cities vs Other Cities (2018)', fontsize=16)
+
+st.pyplot(fig2)
 
 st.caption('Copyright')
-
-
-
-
